@@ -5,6 +5,7 @@ import 'package:attendance/pages/authentication/login_page.dart';
 import 'package:attendance/repository/log_out_repo.dart';
 import 'package:attendance/web_models/log_out_web_model.dart';
 import 'package:attendance/widgets/show_automatic_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
@@ -28,7 +29,6 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
   EnterAndExitRPM? attendanceRPM;
   ProfileRPM? profileRPM;
   LogOutRPM? logOutRPM;
-
 
   final String isBusyAttendance = 'isBusyAttendance';
 
@@ -79,34 +79,33 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
   setOpenDate(String opTime) {
     _openDate = opTime;
   }
+
   DateTime setDateTimeFromString(String time) {
     DateTime date = DateFormat('yyyy/MM/dd Thh:mm:ss').parse(time);
     // 2021-12-28T14:50:46.233Z
     return date;
   }
+
   ///  get user profile   ////////////////////
 
   Future<ProfileRPM?> getProfileDataFromServer() async {
-      try {
-        // await checkNetConnection();
-        setBusy(true);
-        profileRPM =
-        await runBusyFuture(prepareProfileRequest(), throwException: true)
-            .catchError((error) {
-          setError(error);
-          setBusyForObject(isBusyAttendance, false);
-          print(error);
-          notifyListeners();
-        });
-        return profileRPM;
-      } catch (e) {
+    try {
+      // await checkNetConnection();
+      setBusy(true);
+      profileRPM =
+          await runBusyFuture(prepareProfileRequest(), throwException: true)
+              .catchError((error) {
+        setError(error);
         setBusyForObject(isBusyAttendance, false);
-        print(e);
-        throw (e);
-      }
-
-
-
+        print(error);
+        notifyListeners();
+      });
+      return profileRPM;
+    } catch (e) {
+      setBusyForObject(isBusyAttendance, false);
+      print(e);
+      throw (e);
+    }
   }
 
   ///  onError   ////////////////////
@@ -124,97 +123,94 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
   ///  attendance data   ////////////////////
 
   Future<EnterAndExitRPM?> attendanceData(
-      BuildContext context,
-      String date,
-
-      ) async {
+    BuildContext context,
+    String date,
+  ) async {
     try {
-      setBusyForObject(isBusySheet,true);
+      setBusyForObject(isBusySheet, true);
 
-      await checkNetConnection();
-      EnterAndExitRQM req =
-      //     ?
-      EnterAndExitRQM(
-              id: 0,
-              userID: profileRPM?.data?.ID ?? 0,
-              date: date,
-              // "${setDateTimeFromString(DateTime.now().toString())}",
-              enter:profileRPM?.data?.IsWorking == false?
+      // await checkNetConnection();
+      EnterAndExitRQM req = EnterAndExitRQM(
+          id: 0,
+          userID: profileRPM?.data?.ID ?? 0,
+          date: date,
+          // "${setDateTimeFromString(DateTime.now().toString())}",
+          enter: profileRPM?.data?.IsWorking == false
+              ?
               // "${setDateTimeFromString(DateTime.now().toString())}"
               date
-                  :
-                  null
+              : null,
+          exit: profileRPM?.data?.IsWorking == false ? null : date
+          // "${setDateTimeFromString(DateTime.now().toString())}"
 
           ,
-              exit: profileRPM?.data?.IsWorking == false?
-          null :
-              date
-              // "${setDateTimeFromString(DateTime.now().toString())}"
-
-          ,
-              enterAgent: Platform.isAndroid
+          enterAgent: kIsWeb
+              ? 'Web'
+              : (Platform.isAndroid
                   ? 'Android'
                   : Platform.isIOS
                       ? 'Ios'
-                      : 'نامعلوم',
-              exitAgent: Platform.isAndroid
+                      : 'نامعلوم'),
+          exitAgent: kIsWeb
+              ? 'Web'
+              : (Platform.isAndroid
                   ? 'Android'
                   : Platform.isIOS
-                  ? 'Ios'
-                  : 'نامعلوم',
-              enterLatitude: profileRPM?.data?.IsWorking == false? '36.290894' : "",
-              exitLatitude:profileRPM?.data?.IsWorking == false? '' : "36.290894",
-              enterLongitude: profileRPM?.data?.IsWorking == false?'59.593339' :'',
-              exitLongitude: profileRPM?.data?.IsWorking == false? '':'59.593339',
-              enterStationID:profileRPM?.data?.IsWorking == false? 1 : null,
-              exitStationID:profileRPM?.data?.IsWorking == false? null : 1,
-              exitStationTitle: '');
+                      ? 'Ios'
+                      : 'نامعلوم'),
+          enterLatitude:
+              profileRPM?.data?.IsWorking == false ? '36.290894' : "",
+          exitLatitude: profileRPM?.data?.IsWorking == false ? '' : "36.290894",
+          enterLongitude:
+              profileRPM?.data?.IsWorking == false ? '59.593339' : '',
+          exitLongitude:
+              profileRPM?.data?.IsWorking == false ? '' : '59.593339',
+          enterStationID: profileRPM?.data?.IsWorking == false ? 1 : null,
+          exitStationID: profileRPM?.data?.IsWorking == false ? null : 1,
+          exitStationTitle: '');
       notifyListeners();
       initialise();
-      setBusyForObject(isBusySheet,false);
-        attendanceRPM = await runBusyFuture(prepareEnterAndExitRequest(req),
+      setBusyForObject(isBusySheet, false);
+      attendanceRPM = await runBusyFuture(prepareEnterAndExitRequest(req),
               throwException: true)
           .catchError((error) {
         setError(error);
-        setBusyForObject(isBusySheet,true);
+        setBusyForObject(isBusySheet, true);
         Navigator.of(context).pop();
         print(error);
         notifyListeners();
       });
-        if (attendanceRPM != null) {
-          if (attendanceRPM?.Success == true) {
-            setIsClicked();
-            setOpenDate(Jalali.now().formatFullDate());
-            if (profileRPM?.data?.IsWorking == false) {
-              setOpenTime(TimeOfDay.now().format(context));
-              Navigator.of(context).pop();
-              _snackbarService.showCustomSnackBar(
-                  message: "زمان ورود شما با موفقیت ثبت شد",
-                  variant: SnackbarType.success,
-                  duration: const Duration(milliseconds: 3000));
-              initialise();
-              notifyListeners();
-            } else if((profileRPM?.data?.IsWorking == true)) {
-              setExitTime(TimeOfDay.now().format(context));
-              Navigator.of(context).pop();
-              _snackbarService.showCustomSnackBar(
-                  message: "زمان خروج شما با موفقیت ثبت شد",
-                  variant: SnackbarType.success,
-                  duration: const Duration(milliseconds: 3000));
-              initialise();
-              notifyListeners();
-
-            }
+      if (attendanceRPM != null) {
+        if (attendanceRPM?.Success == true) {
+          setIsClicked();
+          setOpenDate(Jalali.now().formatFullDate());
+          if (profileRPM?.data?.IsWorking == false) {
+            setOpenTime(TimeOfDay.now().format(context));
+            Navigator.of(context).pop();
+            _snackbarService.showCustomSnackBar(
+                message: "زمان ورود شما با موفقیت ثبت شد",
+                variant: SnackbarType.success,
+                duration: const Duration(milliseconds: 3000));
+            initialise();
+            notifyListeners();
+          } else if ((profileRPM?.data?.IsWorking == true)) {
+            setExitTime(TimeOfDay.now().format(context));
+            Navigator.of(context).pop();
+            _snackbarService.showCustomSnackBar(
+                message: "زمان خروج شما با موفقیت ثبت شد",
+                variant: SnackbarType.success,
+                duration: const Duration(milliseconds: 3000));
+            initialise();
+            notifyListeners();
           }
         }
-
-      else {
+      } else {
         setError("error in result");
         // print("error");
       }
       return attendanceRPM;
     } catch (e) {
-      setBusyForObject(isBusySheet,false);
+      setBusyForObject(isBusySheet, false);
       if (e is String) {
         _snackbarService.showCustomSnackBar(
             // message: 'لطفا فیلد ها را با دقت کامل کنید',
@@ -226,7 +222,7 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
             // message: 'لطفا با فیلد ها را با دقت کامل کنید',
             message:
                 "در هر شیفت کاری فقط یک بار اجازۀ ثبت ورود و خروج را دارید",
-                // "$e",
+            // "$e",
             variant: SnackbarType.message,
             duration: const Duration(milliseconds: 3000));
       }
@@ -235,8 +231,7 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
     }
   }
 
-  Future<LogOutRPM?> logOut(
-      BuildContext context) async {
+  Future<LogOutRPM?> logOut(BuildContext context) async {
     try {
       // await checkNetConnection();
       setBusy(true);
@@ -254,7 +249,7 @@ class HomeVM extends FutureViewModel<ProfileRPM?> {
     } catch (e) {
       setBusy(false);
       _snackbarService.showCustomSnackBar(
-        // message: 'لطفا فیلد ها را با دقت کامل کنید',
+          // message: 'لطفا فیلد ها را با دقت کامل کنید',
           message: '$e',
           variant: SnackbarType.error,
           duration: const Duration(milliseconds: 3000));

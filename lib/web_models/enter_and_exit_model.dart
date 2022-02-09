@@ -1,8 +1,6 @@
-// ignore_for_file: unnecessary_this, non_constant_identifier_names
 
 import 'package:attendance/entities/safe_convert.dart';
 import 'package:attendance/web_models/simular_web_model.dart';
-import 'package:attendance/web_models/verify_phone_number_web_model.dart';
 
 
 class EnterAndExitRQM{
